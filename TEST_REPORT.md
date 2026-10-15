@@ -1,12 +1,21 @@
-# Prüfstand 0.2.0 – 15.10.2026
+# Prüfstand 0.2.0 – 16.10.2026
 
 ## Veröffentlichung
 
-Die Release-Logik hat lokal **11 zusätzliche Tests bestanden**: exakter Commit,
+**Release [v0.2.0](https://github.com/ComictypX/ha-grilleye-classic/releases/tag/v0.2.0)
+ist veröffentlicht**, kein Entwurf und keine Vorabversion.
+Tag und Manifest-Version wurden nach Veröffentlichung erneut geprüft.
+Tag-Commit: `f9255de5fc28ea41f2f750960b78d1151fd1b36f`.
+
+[Vollständiger Prüflauf inklusive Veröffentlichung](https://github.com/ComictypX/ha-grilleye-classic/actions/runs/38814030806):
+**78 Tests bestanden** (25 Offline-, 42 HA- und 11 Release-Logiktests).
+Ruff, pip check, HACS und hassfest sowie der anschließende Veröffentlichungsjob erfolgreich.
+Die tatsächliche Updateanzeige in der Nutzerinstallation von HACS wurde nicht geprüft.
+
+Die Release-Logik hat auch lokal **11 zusätzliche Tests bestanden**: exakter Commit,
 Versions-/Changelog-Prüfung, erlaubter Branch/Ereignistyp, manuelle Wiederholung,
 älterer Main-Stand, vorhandenes Release, Entwurf/Vorabversion, vorhandener Tag und API-Fehler.
 Die CI führt diese Tests ebenfalls vor dem Veröffentlichungsjob aus.
-Der erste vollständige Lauf mit Veröffentlichung wird nach Abschluss ergänzt.
 
 ## Alarm-Erweiterung
 
@@ -40,7 +49,7 @@ Benachrichtigungsziele und Temperatur-/Empfangsdaten werden simuliert.
 - Ein formal gültiges Paket mit ungültigen Kanälen bestätigt den Empfang,
   macht jedoch keinen ungültigen Temperaturwert verfügbar.
 
-## Framework und Repository-Prüfung
+## Vorheriger Alarm-/Parser-Prüflauf
 
 **Alle drei Jobs bestanden:** [Prüflauf 38812929314](https://github.com/ComictypX/ha-grilleye-classic/actions/runs/38812929314).
 Geprüfter Code-Commit: `d606011e83648bd8f93574368dfc88f77e638efd`.
