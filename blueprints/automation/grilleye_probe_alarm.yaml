@@ -222,10 +222,11 @@ conditions:
     value_template: >-
       {% set active = is_state(alarm_armed, 'on') %}
       {% set quiet = is_state(alarm_snooze, 'active') %}
+      {% set timer_running = states(alarm_snooze) in ['active', 'paused'] %}
       {% set elapsed = as_timestamp(now()) - as_timestamp(this.attributes.last_triggered, 0) %}
       {% set immediate = trigger.id not in ['watchdog', 'clear'] %}
-      {{ (not active and trigger.id == 'arming' and quiet)
-         or (alarm_reason == 'none' and quiet)
+      {{ (not active and timer_running)
+         or (alarm_reason == 'none' and timer_running)
          or (active and alarm_reason != 'none'
              and not (quiet and alarm_reason in ['upper', 'lower'])
              and (elapsed >= alarm_repeat_minutes * 60 or immediate)) }}

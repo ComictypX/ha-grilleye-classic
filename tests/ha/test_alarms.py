@@ -215,10 +215,14 @@ async def test_fault_bypasses_temperature_acknowledgement(hass, freezer, fault):
     assert len(calls) > count
 
 
-async def test_disarm_cancels_quiet_and_stops_alerts(hass, freezer):
+@pytest.mark.parametrize("pause", [False, True])
+async def test_disarm_cancels_quiet_and_stops_alerts(hass, freezer, pause):
     calls = await setup_alarm(hass, freezer, value=90)
     await arm(hass)
     await quiet(hass)
+    if pause:
+        await quiet(hass, "pause")
+        assert hass.states.get(QUIET).state == "paused"
     await arm(hass, False)
     assert hass.states.get(QUIET).state == "idle"
     count = len(calls)
@@ -226,6 +230,15 @@ async def test_disarm_cancels_quiet_and_stops_alerts(hass, freezer):
     assert len(calls) == count
     await arm(hass)
     assert len(calls) > count
+
+
+async def test_acknowledging_while_disarmed_cannot_mute_next_session(hass, freezer):
+    calls = await setup_alarm(hass, freezer, value=90)
+    await quiet(hass)
+    assert hass.states.get(QUIET).state == "idle"
+    assert calls == []
+    await arm(hass)
+    assert calls[-1]["reason"] == "upper"
 
 
 async def test_clear_cancels_quiet_for_next_alarm_episode(hass, freezer):
