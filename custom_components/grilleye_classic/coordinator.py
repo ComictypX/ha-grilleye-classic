@@ -31,14 +31,37 @@ class GrillEyeData:
 class GrillEyeCoordinator(DataUpdateCoordinator[GrillEyeData]):
     """Receive every advertisement, including identical temperatures."""
 
-    def __init__(self, hass: HomeAssistant, address: str, timeout: int) -> None:
+    def __init__(
+        self, hass: HomeAssistant, address: str, timeout: int, *, zero_is_valid: bool = False,
+    ) -> None:
         super().__init__(hass, _LOGGER, name=DOMAIN)
         self.address = address
         self.timeout = timeout
+        self.zero_is_valid = zero_is_valid
         self.data = GrillEyeData()
         self._last_packet_time = float("-inf")
         self._cancel_deadline: Callable[[], None] | None = None
         self._unsubscribers: list[Callable[[], None]] = []
+
+    @property
+    def probe_diagnostics(self) -> dict[str, dict[str, int | str | None]]:
+        """Explain each channel even when HA suppresses unavailable sensor attrs."""
+        result = {}
+        reading = self.data.reading
+        for index in range(6):
+            value = reading.raw_values[index] if reading else None
+            if value is None:
+                status = "no_packet"
+            elif not self.data.fresh:
+                status = "stale"
+            elif value == 0 and not self.zero_is_valid:
+                status = "zero_filtered"
+            elif not 0 <= value <= 3000:
+                status = "out_of_range"
+            else:
+                status = "valid"
+            result[f"probe_{index + 1}"] = {"raw_value": value, "value_status": status}
+        return result
 
     @callback
     def async_start(self) -> None:
@@ -77,7 +100,9 @@ class GrillEyeCoordinator(DataUpdateCoordinator[GrillEyeData]):
             payload_from_raw(raw) if raw is not None
             else info.manufacturer_data.get(0)
         )
-        if payload is None or (reading := parse_payload(payload, self.address)) is None:
+        if payload is None or (reading := parse_payload(
+            payload, self.address, zero_is_valid=self.zero_is_valid,
+        )) is None:
             return
         self._last_packet_time = info.time
         if self._cancel_deadline is not None:

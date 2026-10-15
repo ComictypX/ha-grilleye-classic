@@ -27,10 +27,11 @@
   "options": {
     "step": {
       "init": {
-        "title": "Empfangs-Timeout",
-        "description": "Sekunden ohne gültiges Werbepaket, bis Temperaturen nicht verfügbar sind (30–3600, Standard 120). Speichern lädt die Integration neu; sie wartet auf ein Live-Paket.",
+        "title": "Empfang und Messwerte",
+        "description": "Timeout: 30–3600 Sekunden, Standard 120. 0 °C nur nach Prüfung der Geräteversion und abgezogener Fühler freigeben: auch unbestückte Kanäle können Null senden. Die Option gilt für alle Kanäle. Speichern lädt neu und wartet auf ein Live-Paket.",
         "data": {
-          "stale_timeout": "Timeout (Sekunden)"
+          "stale_timeout": "Timeout (Sekunden)",
+          "zero_is_valid": "0 °C als gültigen Messwert zulassen"
         }
       }
     },
@@ -51,6 +52,18 @@
       },
       "last_seen": {
         "name": "Letztes gültiges Werbepaket"
+      },
+      "probe_3": {
+        "name": "Fühler 3"
+      },
+      "probe_4": {
+        "name": "Fühler 4"
+      },
+      "probe_5": {
+        "name": "Fühler 5"
+      },
+      "probe_6": {
+        "name": "Fühler 6"
       }
     },
     "binary_sensor": {

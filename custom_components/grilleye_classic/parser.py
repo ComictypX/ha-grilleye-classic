@@ -1,6 +1,6 @@
 """Strict, dependency-free decoder for the observed Classic advertisement format."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import re
 import struct
 
@@ -14,18 +14,27 @@ def normalize_address(address: str) -> str:
 
 @dataclass(frozen=True)
 class Reading:
-    """The two verified probe fields; other bytes remain uninterpreted."""
+    """Six signed probe fields, retaining raw values for troubleshooting."""
 
     probe_1: float | None
     probe_2: float | None
+    probe_3: float | None = None
+    probe_4: float | None = None
+    probe_5: float | None = None
+    probe_6: float | None = None
+    raw_values: tuple[int, ...] = field(default=(), compare=False)
 
 
-def parse_payload(payload: bytes, address: str) -> Reading | None:
+def parse_payload(
+    payload: bytes, address: str, *, zero_is_valid: bool = False,
+) -> Reading | None:
     """Decode manufacturer_data[0], excluding the BLE company ID itself.
 
     Require the observed 20-byte layout, prefix and embedded device address.
-    Zero/FFFF are conservatively treated as no usable reading, not as 0 °C.
-    These sentinel meanings still need a physical unplug/cold-probe test.
+    The APK confirms six signed int16 values in tenths of Celsius. Integration
+    policy accepts raw 0..300 °C, retaining tenths rather than rounding like the
+    app. Zero stays opt-in until unplug behavior/firmware is measured. Neither
+    zero nor FFFF is claimed to be a hardware sentinel.
     """
     if len(payload) != 20 or payload[:2] != b"\x00\x00":
         return None
@@ -35,8 +44,11 @@ def parse_payload(payload: bytes, address: str) -> Reading | None:
         return None
     if payload[2:8] != expected:
         return None
-    values = struct.unpack_from("<HH", payload, 8)
-    return Reading(*(None if value in (0, 0xFFFF) else value / 10 for value in values))
+    values = struct.unpack_from("<6h", payload, 8)
+    return Reading(*(
+        value / 10 if 0 <= value <= 3000 and (value != 0 or zero_is_valid) else None
+        for value in values
+    ), raw_values=values)
 
 
 def payload_from_raw(raw: bytes) -> bytes | None:

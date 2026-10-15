@@ -4,7 +4,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_ADDRESS, Platform
 from homeassistant.core import HomeAssistant
 
-from .const import CONF_STALE_TIMEOUT, DEFAULT_STALE_TIMEOUT
+from .const import CONF_STALE_TIMEOUT, CONF_ZERO_IS_VALID, DEFAULT_STALE_TIMEOUT
 from .coordinator import GrillEyeCoordinator
 
 type GrillEyeConfigEntry = ConfigEntry[GrillEyeCoordinator]
@@ -16,6 +16,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: GrillEyeConfigEntry) -> 
     coordinator = GrillEyeCoordinator(
         hass, entry.data[CONF_ADDRESS],
         entry.options.get(CONF_STALE_TIMEOUT, DEFAULT_STALE_TIMEOUT),
+        zero_is_valid=entry.options.get(CONF_ZERO_IS_VALID, False),
     )
     entry.runtime_data = coordinator
     entry.async_on_unload(coordinator.async_stop)

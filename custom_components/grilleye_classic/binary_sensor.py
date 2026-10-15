@@ -32,4 +32,8 @@ class GrillEyeConnectivity(GrillEyeEntity, BinarySensorEntity):
 
     @property
     def extra_state_attributes(self):
-        return {"source": self.coordinator.data.source, "stale_timeout": self.coordinator.timeout}
+        return {
+            "source": self.coordinator.data.source,
+            "stale_timeout": self.coordinator.timeout,
+            "probes": self.coordinator.probe_diagnostics,
+        }

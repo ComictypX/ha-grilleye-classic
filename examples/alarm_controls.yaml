@@ -1,0 +1,31 @@
+# Eine manuelle Dashboard-Karte. Tatsächliche Schalter-/Timer-IDs einsetzen.
+type: vertical-stack
+cards:
+  - type: tile
+    entity: input_boolean.grilleye_alarm_aktiv
+    name: Grillüberwachung
+    features:
+      - type: toggle
+  - type: tile
+    entity: timer.grilleye_fuhler_1_alarmruhe
+    name: Alarmruhe Fühler 1
+  - type: grid
+    columns: 2
+    square: false
+    cards:
+      - type: button
+        name: Fühler 1 quittieren
+        icon: mdi:bell-sleep
+        tap_action:
+          action: perform-action
+          perform_action: timer.start
+          target:
+            entity_id: timer.grilleye_fuhler_1_alarmruhe
+      - type: button
+        name: Alarmruhe beenden
+        icon: mdi:bell-ring
+        tap_action:
+          action: perform-action
+          perform_action: timer.cancel
+          target:
+            entity_id: timer.grilleye_fuhler_1_alarmruhe

@@ -8,7 +8,7 @@ from homeassistant.const import CONF_ADDRESS
 from homeassistant.core import callback
 
 from .const import (
-    CONF_STALE_TIMEOUT, DEFAULT_STALE_TIMEOUT, DOMAIN,
+    CONF_STALE_TIMEOUT, CONF_ZERO_IS_VALID, DEFAULT_STALE_TIMEOUT, DOMAIN,
     MAX_STALE_TIMEOUT, MIN_STALE_TIMEOUT, SERVICE_UUID,
 )
 from .parser import normalize_address, parse_payload
@@ -86,6 +86,9 @@ class GrillEyeOptionsFlow(OptionsFlow):
             vol.Required(CONF_STALE_TIMEOUT, default=self.config_entry.options.get(
                 CONF_STALE_TIMEOUT, DEFAULT_STALE_TIMEOUT,
             )): vol.All(vol.Coerce(int), vol.Range(min=MIN_STALE_TIMEOUT, max=MAX_STALE_TIMEOUT)),
+            vol.Optional(CONF_ZERO_IS_VALID, default=self.config_entry.options.get(
+                CONF_ZERO_IS_VALID, False,
+            )): bool,
         })
         if user_input is not None:
             try:

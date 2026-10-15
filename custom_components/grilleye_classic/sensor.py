@@ -11,17 +11,15 @@ from . import GrillEyeConfigEntry
 from .coordinator import GrillEyeCoordinator
 from .entity import GrillEyeEntity
 
-DESCRIPTIONS = (
+DESCRIPTIONS = tuple(
     SensorEntityDescription(
-        key="probe_1", translation_key="probe_1", device_class=SensorDeviceClass.TEMPERATURE,
+        key=f"probe_{index}", translation_key=f"probe_{index}",
+        device_class=SensorDeviceClass.TEMPERATURE,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         state_class=SensorStateClass.MEASUREMENT, suggested_display_precision=1,
-    ),
-    SensorEntityDescription(
-        key="probe_2", translation_key="probe_2", device_class=SensorDeviceClass.TEMPERATURE,
-        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        state_class=SensorStateClass.MEASUREMENT, suggested_display_precision=1,
-    ),
+        entity_registry_enabled_default=index <= 2,
+    ) for index in range(1, 7)
+) + (
     SensorEntityDescription(
         key="rssi", translation_key="rssi", device_class=SensorDeviceClass.SIGNAL_STRENGTH,
         native_unit_of_measurement=SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
@@ -57,6 +55,14 @@ class GrillEyeSensor(GrillEyeEntity, SensorEntity):
     def native_value(self):
         data = self.coordinator.data
         key = self.entity_description.key
-        if key in ("probe_1", "probe_2"):
+        if key.startswith("probe_"):
             return getattr(data.reading, key) if data.reading else None
         return getattr(data, key)
+
+    @property
+    def extra_state_attributes(self):
+        """Expose raw values; the receiving entity also retains invalid diagnostics."""
+        key = self.entity_description.key
+        if not key.startswith("probe_"):
+            return None
+        return self.coordinator.probe_diagnostics[key]

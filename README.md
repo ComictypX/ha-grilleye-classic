@@ -44,7 +44,7 @@ Der Scanner bleibt zentral von HA/Shelly verwaltet; es wird kein eigener Scanner
 
 | Entität | Bedeutung |
 |---|---|
-| Fühler 1 / Fühler 2 | Temperatur, °C, 0,1 °C Auflösung; HA kann die Anzeigeeinheit umrechnen |
+| Fühler 1–6 (3–6 zunächst deaktiviert) | Temperatur, °C, 0,1 °C Auflösung; HA kann die Anzeigeeinheit umrechnen |
 | Signalstärke | RSSI des zuletzt angenommenen Pakets, dBm; Diagnose, kein kalibrierter Abstand |
 | Letztes gültiges Werbepaket | UTC-Zeitstempel; bleibt nach Empfangsausfall sichtbar |
 | Empfang | `on` bei frischem gültigem Paket, sonst `off`; Bluetooth-Verbindungsklasse |
@@ -63,9 +63,21 @@ neuen Entitäten. Beim Empfangsstatus stehen Quelle (`source`) und Timeout als A
 - Nach 120 s ohne gültiges Paket: Temperaturen/RSSI `unavailable`, Empfang `off`.
   Eine fehlerhafte Nachricht setzt den Timeout nicht zurück. Ein neues gültiges Paket stellt
   die Verfügbarkeit wieder her. Unveränderte gültige Temperaturpakete halten sie aufrecht.
-- Fühlerwert `0000` oder `ffff`: nur dieser Fühler `unavailable`; der andere bleibt messbar.
-  **Die Sentinel-Bedeutung ist eine vorsichtige Annahme und noch nicht am ausgesteckten
-  Fühler nachgewiesen.** Ein echter Wert 0,0 °C wird deshalb ebenfalls unterdrückt.
+- Jeder Kanal wird unabhängig geprüft. Negative Rohwerte (einschließlich `FFFF` = −1)
+  sowie Werte über 300,0 °C werden nicht als Temperatur angezeigt. Das ist eine
+  ausdrücklich strengere Integrationsregel als die Ganzzahlrundung der Android-App.
+- `0000` bleibt standardmäßig gefiltert. **Es ist kein nachgewiesener Aussteck-Code.**
+  Für verifizierte Geräte kann in den Integrationsoptionen „0 °C als gültigen Messwert
+  zulassen“ aktiviert werden. Diese Option gilt für alle Kanäle: ein unbestückter
+  Kanal mit Nullbytes kann dann ebenfalls 0 °C anzeigen. Vorher Abzieh-/Kaltfühlertest
+  durchführen; die passive Werbung verrät die Geräteversion nicht.
+- Am Empfangsstatus enthält das Attribut `probes` die Diagnose aller sechs Kanäle,
+  auch bei nicht verfügbaren Fühlern: `raw_value` ist der
+  vorzeichenbehaftete Rohwert in Zehntelgrad. `value_status` ist `no_packet`,
+  `zero_filtered`, `out_of_range`, `valid` oder `stale`. Nach Timeout kann `raw_value`
+  noch den alten Rohwert enthalten; er ist dann keine aktuelle Messung.
+  Verfügbare Temperatursensoren zeigen diese Attribute ebenfalls; bei nicht
+  verfügbaren Sensoren blendet HA zusätzliche Sensorattribute aus.
 - „BLE-Verbindungsabbruch“ bedeutet hier **Ausbleiben gültiger Werbung**. Es gibt keine
   aktive BLE-Verbindung, deren Trennung direkt gemeldet werden könnte. Ein HA-Ausfall
   selbst kann durch eine Automation im selben HA nicht gemeldet werden.
@@ -76,6 +88,13 @@ neuen Entitäten. Beim Empfangsstatus stehen Quelle (`source`) und Timeout als A
   Empfang, nicht eine garantierte Auswahl des stärksten Proxys.
 
 ## Alarm-Automationen und iOS Critical Notifications
+
+**Empfohlen:** Die neue [Alarmvorlage mit Einrichtungsformular](docs/ALARMS.md)
+unterstützt jeden der sechs Fühler mit individuellen Unter-/Obergrenzen,
+Benachrichtigungsaktionen und zeitlich begrenzter Quittierung. Empfangs-/Fühlerfehler
+werden auch während der Temperatur-Alarmruhe gemeldet. Blueprint separat importieren;
+HACS erzeugt keine Automationen. Die folgenden zwei Dateien bleiben einfache
+Alternativen für Fühler 1/2; nicht parallel für denselben Zweck aktivieren.
 
 Die Dateien unter [examples](examples) sind **Vorlagen für jeweils eine neue Automation
 im UI-YAML-Editor**, keine automatische Änderung deiner laufenden HA-Konfiguration.
@@ -116,7 +135,7 @@ einen Ausfallhinweis und wertet diese nicht als Temperatur 0 aus.
 
 1. Beide Anzeigen am GrillEye mit HA vergleichen, auch bei wechselnden Temperaturen.
 2. Temperatur zehn Minuten konstant lassen: Empfang muss aktiv bleiben.
-3. Fühler nacheinander abziehen und Rohpakete dokumentieren; Sentinel-Annahme prüfen.
+3. Fühler nacheinander abziehen und Rohpakete dokumentieren; Nullfilter und Rohwerte pro Kanal prüfen.
 4. GrillEye ausschalten: nach Timeout Empfang aus, Temperaturen nicht verfügbar;
    mit aktiviertem Alarm muss die Ausfallnachricht hörbar eintreffen.
 5. Shelly vom Strom trennen, WLAN-Verbindung unterbrechen, danach Wiederempfang prüfen.
@@ -129,25 +148,60 @@ einen Ausfallhinweis und wertet diese nicht als Temperatur 0 aus.
 ## Protokoll und bestätigte Beispiele
 
 Die **20 Bytes** von `manufacturer_data[0]` enthalten nicht mehr die zweiby­tige
-BLE-Company-ID. Layout relativ zu diesem Wert:
+BLE-Company-ID. Die REA-Analyse der Android-App 2.0.0 (Code 64) bestätigt sechs
+Temperaturfelder. Layout relativ zu diesem Wert:
 
 | Bytes (ab 0) | Interpretation |
 |---|---|
-| 0–1 | beobachtetes Präfix `0000` |
-| 2–7 | Geräte-MAC in dargestellter Reihenfolge |
-| 8–9 | Fühler 1, Little-Endian `uint16`, geteilt durch 10 |
-| 10–11 | Fühler 2, Little-Endian `uint16`, geteilt durch 10 |
-| 12–19 | unbekannt; keine erfundenen Batterie-/Fühlerwerte |
+| 0–1 | beobachtetes Präfix `0000`, Bedeutung offen |
+| 2–7 | in den Mitschnitten Geräte-MAC; als Formatprüfung beibehalten |
+| 8–19 | Fühler 1–6, je zwei Bytes Little-Endian **int16**, geteilt durch 10 |
 
-| Herstellerdaten | Fühler 1 | Fühler 2 |
-|---|---:|---:|
-| `00004006a08b400168012e040000000000000000` | 36,0 °C | 107,0 °C |
-| `00004006a08b4001400138040000000000000000` | 32,0 °C | 108,0 °C |
+| Herstellerdaten | Fühler 1 | Fühler 2 | Rohwerte Kanal 3–6 |
+|---|---:|---:|---|
+| `00004006a08b400168012e040000000000000000` | 36,0 °C | 107,0 °C | jeweils 0 |
+| `00004006a08b4001400138040000000000000000` | 32,0 °C | 108,0 °C | jeweils 0 |
 
-Die Integration ist auf diese beobachtete Classic-Variante begrenzt. Andere Modelle,
-Firmwarevarianten, zusätzliche Kanäle, Batteriestand und negative Temperaturen sind
-nicht nachgewiesen. Unplausible hohe Zahlen werden nicht durch frei erfundene
-Grenzen weggefiltert. Die Aussagekraft hängt vom bestätigten Paketformat ab.
+Fühler 3–6 unter Einstellungen → Geräte & Dienste → GrillEye Classic → Gerät →
+deaktivierte Entitäten einblenden → gewünschte Entität aktivieren. Bestehende
+Unique IDs und benutzerdefinierte Namen von Fühler 1/2 bleiben erhalten.
+Zusätzliche Kanäle sind durch den App-Decoder belegt, an deinem Gerät jedoch noch
+nicht mit bestückten Fühlern praktisch geprüft.
+
+Die App rundet auf ganze Grad und unterscheidet bei der unteren Gültigkeitsgrenze
+nach Geräteversion. HA behält Zehntelgrad und akzeptiert ausdrücklich den Rohbereich
+0,0–300,0 °C, mit Nullwerten nur bei aktivierter Option. Negative Werte werden nach
+korrekter signed-Dekodierung verworfen, statt zu extrem hohen Temperaturen zu werden.
+`FFFF` ist damit −0,1 °C außerhalb dieses Bereichs und kein behaupteter Hardware-Sentinel.
+Andere Paketlängen/Modelle bleiben ausgeschlossen; die App ist hier flexibler.
+
+Weitere Befunde, GATT-UUIDs, Befehle und Grenzen stehen in
+[docs/PROTOCOL.md](docs/PROTOCOL.md). Batterie, Geräteversion und Hardwarealarme
+sind im untersuchten Pfad GATT-Funktionen und werden von dieser passiven Integration
+nicht erfunden oder aktiv abgefragt. Shelly kann diese GATT-Verbindungen nicht vermitteln.
+
+## Automatische Live-Anzeige
+
+Geräteseite und Dashboard aktualisieren die Werte bei jedem neuen gültigen
+Werbepaket. Konstante Werte bleiben sichtbar, während der letzte Empfang weiterläuft.
+Es gibt keine garantierte Sekundenrate und kein nötiges manuelles Neuladen.
+
+[examples/dashboard.yaml](examples/dashboard.yaml) enthält **eine Karte für den
+manuellen Karteneditor**: zwei Temperaturkacheln, Empfang, letzter Empfang und ein
+Temperaturverlauf. Tatsächliche Entity-IDs zuerst einsetzen (deutsche Namen können
+`fuhler_1` statt `probe_1` ergeben). Weitere aktivierte Fühler lassen sich ergänzen.
+Der Verlauf benötigt aufgezeichnete Zustände im Recorder. Das Beispiel installiert
+keine weiteren HACS-Karten und verändert dein vorhandenes Dashboard nicht automatisch.
+
+## Update von 0.1.0
+
+Nach dem HACS-Update Home Assistant neu starten. Integration nicht löschen oder neu
+anlegen: die bisherigen MAC-/Kanal-IDs werden weiterverwendet. Timeout und Nullfilter
+bleiben ohne Optionsänderung bei den bisherigen Einstellungen. Neu ist die Prüfung
+des Messbereichs; bisher angezeigte unplausible Werte über 300 °C werden unverfügbar.
+Rückkehr: in HACS die vorherige Version erneut herunterladen und HA neu starten;
+die zusätzlichen Entitäten bei Bedarf deaktivieren. Keine automatische HA-Aktualisierung
+oder Änderung deiner Alarm-Automationen durch dieses Projektupdate.
 
 ## Entwicklung und Tests
 
@@ -182,5 +236,7 @@ Letzter lokaler Prüfstand und verbleibende Grenzen: [TEST_REPORT.md](TEST_REPOR
 - [Shelly Bluetooth Support](https://www.home-assistant.io/integrations/shelly/#bluetooth-support)
 - [HACS Integrationsanforderungen](https://www.hacs.xyz/docs/publish/integration/)
 - [iOS Critical Notifications](https://companion.home-assistant.io/docs/notifications/critical-notifications/)
+- [Tile-Karte](https://www.home-assistant.io/dashboards/tile/)
+- [Verlaufskarte](https://www.home-assistant.io/dashboards/history-graph/)
 
 MIT-Lizenz. Unabhängiges Community-Projekt, keine offizielle GrillEye-Integration.

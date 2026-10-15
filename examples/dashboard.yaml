@@ -1,0 +1,28 @@
+# Eine manuelle Karte im Dashboard-Editor, kein vollständiges Dashboard.
+# Alle Entity-IDs durch die tatsächlichen IDs deiner Installation ersetzen.
+type: vertical-stack
+cards:
+  - type: grid
+    columns: 2
+    square: false
+    cards:
+      - type: tile
+        entity: sensor.grilleye_classic_4001_probe_1
+        name: Fühler 1
+      - type: tile
+        entity: sensor.grilleye_classic_4001_probe_2
+        name: Fühler 2
+      - type: tile
+        entity: binary_sensor.grilleye_classic_4001_receiving
+        name: Empfang
+      - type: tile
+        entity: sensor.grilleye_classic_4001_last_seen
+        name: Letzter Empfang
+  - type: history-graph
+    title: Temperaturverlauf
+    hours_to_show: 3
+    entities:
+      - entity: sensor.grilleye_classic_4001_probe_1
+        name: Fühler 1
+      - entity: sensor.grilleye_classic_4001_probe_2
+        name: Fühler 2
