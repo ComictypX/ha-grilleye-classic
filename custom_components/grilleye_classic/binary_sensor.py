@@ -21,7 +21,10 @@ class GrillEyeConnectivity(GrillEyeEntity, BinarySensorEntity):
     _attr_device_class = BinarySensorDeviceClass.CONNECTIVITY
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_translation_key = "receiving"
-    _attr_available = True
+
+    @property
+    def available(self) -> bool:
+        return True
 
     @property
     def is_on(self) -> bool:
