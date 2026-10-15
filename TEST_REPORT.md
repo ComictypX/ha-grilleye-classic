@@ -2,11 +2,22 @@
 
 ## Alarm-Erweiterung
 
-Die neue Alarmvorlage wird zusätzlich mit echten HA-Automationen, Schalter-Helfern
-und Timern geprüft. Ziel sind inklusive Grenzen, Wiederholung, Alarmruhe,
-Ausfallmeldungen trotz Alarmruhe, Start/Reload, Einheiten und unabhängige Fühler.
-Der konkrete Prüflauf dieser Erweiterung wird nach Abschluss ergänzt.
-Die folgenden CI-Ergebnisse beziehen sich zunächst auf den vorherigen Parserstand.
+**32 zusätzliche Alarmtests bestanden**, mit echten HA-Automationen, Blueprint-
+Schema/Substitution, Schalter-Helfern, Timern und gespeichertem Wiederherstellungszustand.
+Benachrichtigungsziele und Temperatur-/Empfangsdaten werden simuliert.
+
+- Inklusive Unter-/Obergrenzen, bereits verletzte Grenzen beim Einschalten und
+  unveränderte/wechselnde Temperaturen ohne Paket-für-Paket-Benachrichtigungen.
+- Wiederholungsabstand, Ende der Verletzung, Ausfall und Wiederempfang.
+- Begrenzte Alarmruhe mit echtem Timerablauf; Empfangs-/Fühlerfehler trotz Alarmruhe.
+- Unabhängige Alarmruhe bei zwei Fühlern, pausierter Timer, Ausschalten und neue
+  Grillsitzung; Quittieren im ausgeschalteten Zustand kann die nächste Sitzung nicht stummschalten.
+- HA-Start/Automations-Neuladen sowie wiederhergestellter Schalter und Timer,
+  einschließlich während des HA-Ausfalls abgelaufener Alarmruhe.
+- Fehlerhafte Grenzen, falsche Anzeigeeinheit, Fahrenheit, unbekannte und nicht
+  numerische Werte, deaktivierte Temperaturgrenzen bei weiter aktiver Ausfallüberwachung.
+- Echte dauerhafte HA-Meldung mit stabiler ID, erneuter Versuch bei simuliertem
+  Benachrichtigungsfehler und gerenderter Critical-Push-Aufruf aus der Dokumentation.
 
 ## Lokal ausgeführt
 
@@ -23,11 +34,12 @@ Die folgenden CI-Ergebnisse beziehen sich zunächst auf den vorherigen Parsersta
 
 ## Framework und Repository-Prüfung
 
-**Alle drei Jobs bestanden:** [Prüflauf 38810633510](https://github.com/ComictypX/ha-grilleye-classic/actions/runs/38810633510).
-Geprüfter Code-Commit: `662a6549cb99df4688706fd27f3aeb3264589e71`.
+**Alle drei Jobs bestanden:** [Prüflauf 38812929314](https://github.com/ComictypX/ha-grilleye-classic/actions/runs/38812929314).
+Geprüfter Code-Commit: `d606011e83648bd8f93574368dfc88f77e638efd`.
 
 - Ubuntu, Python 3.14.8, Home Assistant 2026.10.1.
-- **25 Offline-Tests und 10 echte HA-Frameworktests bestanden**.
+- **25 Offline-Tests und 42 echte HA-Frameworktests bestanden**, zusammen **67 Tests**.
+  Die 42 HA-Tests umfassen 32 Alarmtests und 10 bisherige Integrations-/Beispieltests.
 - Optional aktivierte Kanäle, stabile Unique IDs, Rohwert-/Statusattribute,
   Nullwertoption, Reload, Timeout, Wiederempfang, Entdeckung und Entladen geprüft.
 - Beide Alarmvorlagen mit dem echten HA-Konfigurationsvalidator geprüft.
@@ -46,4 +58,5 @@ Die Diagnoseattribute unterstützen diese Prüfung; sie erkennen keinen
 angeschlossenen Fühler unabhängig von dessen Rohwert.
 Dashboard-Beispiel anhand offizieller Karten-Dokumentation erstellt;
 keine automatische Installation oder visuelle Prüfung im Nutzer-Dashboard.
-Softwaretests beweisen keine zuverlässige Funk-/Push-Zustellung.
+Softwaretests beweisen keine zuverlässige Funk-/Push-Zustellung. Die Alarmvorlage
+muss separat importiert werden; es wurde keine laufende HA-Konfiguration verändert.
