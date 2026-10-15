@@ -161,3 +161,17 @@ class ReceiverTests(unittest.TestCase):
         self.receiver.async_stop()
         self.assertEqual(len(self.cancelled), 2)
         self.assertTrue(self.timers[0].cancelled)
+
+    def test_zero_policy_reaches_live_decoder(self):
+        payload = bytes.fromhex("00004006a08b400100002e040000000000000000")
+        self.receiver.zero_is_valid = True
+        self.receiver._async_received(self.packet(payload))
+        self.assertEqual(self.receiver.data.reading.probe_1, 0)
+        self.assertEqual(self.receiver.data.reading.probe_6, 0)
+
+    def test_valid_frame_with_invalid_channels_still_confirms_reception(self):
+        payload = bytes.fromhex("00004006a08b4001") + b"\xff\xff" * 6
+        self.receiver._async_received(self.packet(payload))
+        self.assertTrue(self.receiver.data.fresh)
+        self.assertIsNone(self.receiver.data.reading.probe_1)
+        self.assertIsNone(self.receiver.data.reading.probe_6)

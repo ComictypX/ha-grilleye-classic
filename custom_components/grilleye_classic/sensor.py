@@ -11,17 +11,15 @@ from . import GrillEyeConfigEntry
 from .coordinator import GrillEyeCoordinator
 from .entity import GrillEyeEntity
 
-DESCRIPTIONS = (
+DESCRIPTIONS = tuple(
     SensorEntityDescription(
-        key="probe_1", translation_key="probe_1", device_class=SensorDeviceClass.TEMPERATURE,
+        key=f"probe_{index}", translation_key=f"probe_{index}",
+        device_class=SensorDeviceClass.TEMPERATURE,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         state_class=SensorStateClass.MEASUREMENT, suggested_display_precision=1,
-    ),
-    SensorEntityDescription(
-        key="probe_2", translation_key="probe_2", device_class=SensorDeviceClass.TEMPERATURE,
-        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        state_class=SensorStateClass.MEASUREMENT, suggested_display_precision=1,
-    ),
+        entity_registry_enabled_default=index <= 2,
+    ) for index in range(1, 7)
+) + (
     SensorEntityDescription(
         key="rssi", translation_key="rssi", device_class=SensorDeviceClass.SIGNAL_STRENGTH,
         native_unit_of_measurement=SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
@@ -57,6 +55,26 @@ class GrillEyeSensor(GrillEyeEntity, SensorEntity):
     def native_value(self):
         data = self.coordinator.data
         key = self.entity_description.key
-        if key in ("probe_1", "probe_2"):
+        if key.startswith("probe_"):
             return getattr(data.reading, key) if data.reading else None
         return getattr(data, key)
+
+    @property
+    def extra_state_attributes(self):
+        """Keep signed raw readings visible even when a channel is unavailable."""
+        key = self.entity_description.key
+        if not key.startswith("probe_"):
+            return None
+        reading = self.coordinator.data.reading
+        if reading is None:
+            return {"raw_value": None, "value_status": "no_packet"}
+        value = reading.raw_values[int(key[6:]) - 1]
+        if not self.coordinator.data.fresh:
+            status = "stale"
+        elif value == 0 and not self.coordinator.zero_is_valid:
+            status = "zero_filtered"
+        elif not 0 <= value <= 3000:
+            status = "out_of_range"
+        else:
+            status = "valid"
+        return {"raw_value": value, "value_status": status}

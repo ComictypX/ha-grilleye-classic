@@ -27,10 +27,11 @@
   "options": {
     "step": {
       "init": {
-        "title": "Reception timeout",
-        "description": "Seconds without a valid advertisement before temperatures become unavailable (30–3600, default 120). Saving reloads the integration and waits for a live packet.",
+        "title": "Reception and readings",
+        "description": "Timeout: 30–3600 seconds, default 120. Only allow 0 °C after checking firmware and unplugged probes: unused channels may also send zero. This option applies to all channels. Saving reloads and waits for a live packet.",
         "data": {
-          "stale_timeout": "Stale timeout (seconds)"
+          "stale_timeout": "Stale timeout (seconds)",
+          "zero_is_valid": "Allow 0 °C as a valid reading"
         }
       }
     },
@@ -51,6 +52,18 @@
       },
       "last_seen": {
         "name": "Last valid advertisement"
+      },
+      "probe_3": {
+        "name": "Probe 3"
+      },
+      "probe_4": {
+        "name": "Probe 4"
+      },
+      "probe_5": {
+        "name": "Probe 5"
+      },
+      "probe_6": {
+        "name": "Probe 6"
       }
     },
     "binary_sensor": {

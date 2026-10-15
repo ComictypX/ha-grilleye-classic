@@ -56,13 +56,37 @@ class ParserTests(unittest.TestCase):
                 self.assertIsNone((result.probe_1, result.probe_2)[index])
                 self.assertEqual((result.probe_1, result.probe_2)[1-index], (107, 36)[index])
 
-    def test_unsigned_little_endian_and_tenths(self):
+    def test_signed_little_endian_and_tenths(self):
         payload = bytearray(CURRENT)
-        struct.pack_into("<HH", payload, 8, 1234, 32768)
-        self.assertEqual(parser.parse_payload(bytes(payload), ADDRESS), parser.Reading(123.4, 3276.8))
+        struct.pack_into("<6h", payload, 8, 1234, -32768, -1, 32767, 3000, 3001)
+        result = parser.parse_payload(bytes(payload), ADDRESS)
+        self.assertEqual(result, parser.Reading(123.4, None, None, None, 300, None))
+        self.assertEqual(result.raw_values, (1234, -32768, -1, 32767, 3000, 3001))
 
-    def test_unknown_tail_does_not_become_more_probes(self):
-        self.assertEqual(parser.parse_payload(CURRENT[:12] + b"\xff" * 8, ADDRESS), parser.Reading(36, 107))
+    def test_six_independent_channels(self):
+        values = (361, 1071, 1234, 456, 789, 2999)
+        payload = CURRENT[:8] + struct.pack("<6h", *values)
+        self.assertEqual(parser.parse_payload(payload, ADDRESS), parser.Reading(36.1, 107.1, 123.4, 45.6, 78.9, 299.9))
+        for index in range(6):
+            damaged = bytearray(payload)
+            struct.pack_into("<h", damaged, 8 + 2 * index, -1)
+            result = parser.parse_payload(bytes(damaged), ADDRESS)
+            for channel in range(6):
+                self.assertEqual(getattr(result, f"probe_{channel + 1}"), None if index == channel else values[channel] / 10)
+
+    def test_zero_is_an_explicit_policy_not_a_sentinel(self):
+        result = parser.parse_payload(CURRENT, ADDRESS, zero_is_valid=True)
+        self.assertEqual(result, parser.Reading(36, 107, 0, 0, 0, 0))
+        payload = CURRENT[:8] + struct.pack("<6h", 0, -1, -10, 1, 3000, 3004)
+        self.assertEqual(parser.parse_payload(payload, ADDRESS, zero_is_valid=True), parser.Reading(0, None, None, 0.1, 300, None))
+
+    def test_entire_signed_domain_is_bounded_and_preserves_precision(self):
+        # Exhaustive signed-16 domain: invalid values can never become huge heat readings.
+        for raw in range(-32768, 32768):
+            payload = CURRENT[:8] + struct.pack("<6h", raw, 1070, 0, 0, 0, 0)
+            result = parser.parse_payload(payload, ADDRESS, zero_is_valid=True)
+            self.assertEqual(result.probe_1, raw / 10 if 0 <= raw <= 3000 else None)
+            self.assertEqual(result.probe_2, 107)
 
     def test_raw_malformed_unrelated_duplicate(self):
         for raw in (b"", b"\0", RAW[:-1], b"\x02\xff\x00", b"\x03\xff\x01\x00", RAW + RAW):

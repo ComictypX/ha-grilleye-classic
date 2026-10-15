@@ -2,6 +2,7 @@
 
 from datetime import timedelta
 from types import SimpleNamespace
+import struct
 import pytest
 
 from homeassistant import config_entries
@@ -17,8 +18,8 @@ ADDRESS = "40:06:A0:8B:40:01"
 PAYLOAD = bytes.fromhex("00004006a08b400168012e040000000000000000")
 
 
-async def setup_device(hass):
-    entry = MockConfigEntry(domain=DOMAIN, title="GrillEye Classic 4001", unique_id=ADDRESS, data={CONF_ADDRESS: ADDRESS})
+async def setup_device(hass, options=None):
+    entry = MockConfigEntry(domain=DOMAIN, title="GrillEye Classic 4001", unique_id=ADDRESS, data={CONF_ADDRESS: ADDRESS}, options=options or {})
     entry.add_to_hass(hass)
     assert await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
@@ -110,3 +111,67 @@ async def test_options_validate_and_reload(hass, bluetooth_mock):
     assert result["type"] is FlowResultType.CREATE_ENTRY
     await hass.async_block_till_done()
     assert entry.runtime_data.timeout == 60
+
+
+async def test_optional_probes_keep_existing_unique_ids(hass, bluetooth_mock):
+    entry = await setup_device(hass)
+    registry = er.async_get(hass)
+    for index in range(1, 7):
+        entity_id = registry.async_get_entity_id("sensor", DOMAIN, f"{ADDRESS}_probe_{index}")
+        entity = registry.async_get(entity_id)
+        assert entity.config_entry_id == entry.entry_id
+        assert entity.disabled_by == (None if index <= 2 else er.RegistryEntryDisabler.INTEGRATION)
+        if index >= 3:
+            assert hass.states.get(entity_id) is None
+            registry.async_update_entity(entity_id, disabled_by=None)
+    # Reload applies the registry's explicit channel opt-in without changing IDs.
+    assert await hass.config_entries.async_reload(entry.entry_id)
+    await hass.async_block_till_done()
+    payload = PAYLOAD[:8] + struct.pack("<6h", 361, 1071, 1234, 456, 789, 2999)
+    bluetooth_mock[1].call_args.args[1](packet(manufacturer_data={0: payload}))
+    await hass.async_block_till_done()
+    for index, expected in enumerate((36.1, 107.1, 123.4, 45.6, 78.9, 299.9), 1):
+        entity_id = registry.async_get_entity_id("sensor", DOMAIN, f"{ADDRESS}_probe_{index}")
+        state = hass.states.get(entity_id)
+        assert state.state == str(expected)
+        assert state.attributes["value_status"] == "valid"
+        assert state.attributes["raw_value"] == round(expected * 10)
+
+
+async def test_signed_invalid_values_diagnostics_and_stale(hass, bluetooth_mock):
+    await setup_device(hass)
+    registry = er.async_get(hass)
+    probe1 = registry.async_get_entity_id("sensor", DOMAIN, f"{ADDRESS}_probe_1")
+    probe2 = registry.async_get_entity_id("sensor", DOMAIN, f"{ADDRESS}_probe_2")
+    assert hass.states.get(probe1).attributes["value_status"] == "no_packet"
+    receive = bluetooth_mock[1].call_args.args[1]
+    receive(packet(manufacturer_data={0: PAYLOAD[:8] + struct.pack("<6h", -1, 3001, 0, 0, 0, 0)}))
+    await hass.async_block_till_done()
+    for entity_id, raw in ((probe1, -1), (probe2, 3001)):
+        state = hass.states.get(entity_id)
+        assert state.state == "unavailable"
+        assert state.attributes["value_status"] == "out_of_range"
+        assert state.attributes["raw_value"] == raw
+    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=121))
+    await hass.async_block_till_done()
+    assert hass.states.get(probe1).attributes["value_status"] == "stale"
+
+
+async def test_zero_option_reload_and_recovery(hass, bluetooth_mock):
+    entry = await setup_device(hass)
+    registry = er.async_get(hass)
+    probe1 = registry.async_get_entity_id("sensor", DOMAIN, f"{ADDRESS}_probe_1")
+    zero_packet = PAYLOAD[:8] + b"\0\0" + PAYLOAD[10:]
+    bluetooth_mock[1].call_args.args[1](packet(manufacturer_data={0: zero_packet}))
+    await hass.async_block_till_done()
+    assert hass.states.get(probe1).attributes["value_status"] == "zero_filtered"
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await hass.config_entries.options.async_configure(result["flow_id"], {"stale_timeout": 60, "zero_is_valid": True})
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    await hass.async_block_till_done()
+    assert entry.runtime_data.zero_is_valid is True
+    assert hass.states.get(probe1).state == "unavailable"  # No cached measurement on reload.
+    bluetooth_mock[1].call_args.args[1](packet(manufacturer_data={0: zero_packet}))
+    await hass.async_block_till_done()
+    assert hass.states.get(probe1).state == "0.0"
+    assert hass.states.get(probe1).attributes["value_status"] == "valid"

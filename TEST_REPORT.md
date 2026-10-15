@@ -1,38 +1,36 @@
-# Prüfstand – 15.10.2026
+# Prüfstand 0.2.0 – 15.10.2026
 
 ## Lokal ausgeführt
 
-- Python 3.14.7: `python -m unittest discover -s tests/unit -v` – **20 Tests bestanden**.
-- Beide bereitgestellten GrillEye-Pakete: **36,0/107,0 °C** und **32,0/108,0 °C**.
-- Paketlängen, Präfix, eingebettete MAC, Little Endian, Zehntelgrad und unabhängige
-  Fühlerverfügbarkeit geprüft.
-- Empfangslogik mit HA-Boundary-Testdoubles: identische Pakete, Fehlerpakete, alte/
-  doppelte Pakete, Timeout, Wiederempfang, Proxywechsel, Raw- statt historischer
-  Manufacturer-Daten und Callback-/Timerbereinigung geprüft.
-- Python-Dateien kompilieren; JSON und YAML erfolgreich eingelesen.
+- Python 3.14.7: **24 Offline-Tests bestanden**.
+- Bekannte Funkpakete unverändert 36,0/107,0 °C und 32,0/108,0 °C.
+- Alle 65.536 signed-16-Werte systematisch durch den echten Parser geprüft:
+  Messbereich 0–300 °C, Zehntelgrad, unabhängiger zweiter Kanal.
+- Alle sechs Kanalpositionen und unabhängiger Kanalausfall geprüft.
+- Nullfilter an/aus, negative Werte, FFFF, 7FFF und obere Bereichsgrenze geprüft.
+- Empfang: passive Registrierung, identische Temperaturen, Cache-Abgrenzung,
+  fehlerhafte/alte/doppelte Pakete, Timeout, Wiederempfang, Proxywechsel und Cleanup.
+- Ein formal gültiges Paket mit ungültigen Kanälen bestätigt den Empfang,
+  macht jedoch keinen ungültigen Temperaturwert verfügbar.
 
-## GitHub Actions
+## Framework und Repository-Prüfung
 
-**Alle drei Jobs bestanden:** [Prüflauf 38804105992](https://github.com/ComictypX/ha-grilleye-classic/actions/runs/38804105992).
-Geprüfter Code-Commit: `3b1d0c7aaeeb44ee7f726a8f407f445ebb842a32`.
+Die Linux-CI führt die echten Home-Assistant-Tests aus, einschließlich optionaler
+Kanäle, stabiler Unique IDs, Rohwert-/Statusattribute, Nullwertoption und Reload.
+Zusätzlich werden beide Alarmvorlagen im echten HA-Validator geprüft.
+Ruff, pip check, HACS und hassfest laufen ebenfalls in GitHub Actions.
+Der konkrete Lauf für diese Version wird nach Abschluss hier verlinkt.
+Historischer Stand 0.1.0: [erfolgreicher Prüflauf](https://github.com/ComictypX/ha-grilleye-classic/actions/runs/38804105992).
+Dieser ältere Lauf ist kein Nachweis für 0.2.0.
 
-- Ubuntu / Python 3.14.8 / Home Assistant **2026.10.1**.
-- **20 Offline-Tests bestanden**, zusätzlich **7 echte HA-Frameworktests bestanden**.
-- HA: Konfiguration, Bluetooth-Entdeckung, Duplikaterkennung, Sensorzustände,
-  Timeout, Wiederempfang, unabhängiger Fühlerausfall, Entladen, Timeout-Validierung
-  und Neuladen nach Optionsänderung. Der Funkempfang ist dabei simuliert.
-- Beide Alarmbeispiele mit dem echten asynchronen HA-Konfigurationsvalidator geprüft.
-- `pip check`, Ruff, HACS und hassfest: **erfolgreich**.
+## Grenzen
 
-Die zusätzliche lokale Installation der Linux-Testabhängigkeiten war nicht freigegeben;
-die echten Frameworktests wurden deshalb erfolgreich in GitHub Actions ausgeführt.
-Der jeweils aktuelle Status ist unter [Actions](https://github.com/ComictypX/ha-grilleye-classic/actions) sichtbar.
-
-## Noch praktisch abzunehmen
-
-Keine Ende-zu-Ende-Abnahme an einem laufenden GrillEye/Shelly oder iPhone durchgeführt.
-HA-Neustart, Shelly-Ausfall, konstante Temperaturen, Fühler abziehen und echte
-hörbare Critical Notifications gemäß README testen. Die Interpretation `0`/`FFFF`
-als unbrauchbarer Fühlerwert ist konservativ und noch nicht physisch bestätigt.
-Ein grüner Softwaretest ersetzt diese Abnahme nicht.
-
+Der Bluetooth-Empfang ist in Softwaretests simuliert. Der Nutzer hat für 0.1.0
+bereits eine HA-Geräteseite mit Messwerten und laufenden Empfangszeitstempeln gezeigt.
+Keine zusätzliche Hardware-/iOS-Abnahme von 0.2.0 durchgeführt.
+Kanäle 3–6, Nullwerte und Abziehverhalten müssen am Gerät verglichen werden.
+Die Diagnoseattribute unterstützen diese Prüfung; sie erkennen keinen
+angeschlossenen Fühler unabhängig von dessen Rohwert.
+Dashboard-Beispiel anhand offizieller Karten-Dokumentation erstellt;
+keine automatische Installation oder visuelle Prüfung im Nutzer-Dashboard.
+Softwaretests beweisen keine zuverlässige Funk-/Push-Zustellung.

@@ -31,10 +31,13 @@ class GrillEyeData:
 class GrillEyeCoordinator(DataUpdateCoordinator[GrillEyeData]):
     """Receive every advertisement, including identical temperatures."""
 
-    def __init__(self, hass: HomeAssistant, address: str, timeout: int) -> None:
+    def __init__(
+        self, hass: HomeAssistant, address: str, timeout: int, *, zero_is_valid: bool = False,
+    ) -> None:
         super().__init__(hass, _LOGGER, name=DOMAIN)
         self.address = address
         self.timeout = timeout
+        self.zero_is_valid = zero_is_valid
         self.data = GrillEyeData()
         self._last_packet_time = float("-inf")
         self._cancel_deadline: Callable[[], None] | None = None
@@ -77,7 +80,9 @@ class GrillEyeCoordinator(DataUpdateCoordinator[GrillEyeData]):
             payload_from_raw(raw) if raw is not None
             else info.manufacturer_data.get(0)
         )
-        if payload is None or (reading := parse_payload(payload, self.address)) is None:
+        if payload is None or (reading := parse_payload(
+            payload, self.address, zero_is_valid=self.zero_is_valid,
+        )) is None:
             return
         self._last_packet_time = info.time
         if self._cancel_deadline is not None:
