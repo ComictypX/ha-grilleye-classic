@@ -2,11 +2,12 @@
 
 from datetime import timedelta
 from types import SimpleNamespace
+import pytest
 
 from homeassistant import config_entries
 from homeassistant.components import bluetooth
 from homeassistant.const import CONF_ADDRESS
-from homeassistant.data_entry_flow import FlowResultType
+from homeassistant.data_entry_flow import FlowResultType, InvalidData
 from homeassistant.helpers import entity_registry as er
 from homeassistant.util import dt as dt_util
 from pytest_homeassistant_custom_component.common import MockConfigEntry, async_fire_time_changed
@@ -102,8 +103,9 @@ async def test_bluetooth_discovery_and_reject(hass, bluetooth_mock):
 async def test_options_validate_and_reload(hass, bluetooth_mock):
     entry = await setup_device(hass)
     result = await hass.config_entries.options.async_init(entry.entry_id)
-    result = await hass.config_entries.options.async_configure(result["flow_id"], {"stale_timeout": 1})
-    assert result["errors"] == {"base": "invalid_timeout"}
+    # The real flow manager validates the form before calling the options step.
+    with pytest.raises(InvalidData):
+        await hass.config_entries.options.async_configure(result["flow_id"], {"stale_timeout": 1})
     result = await hass.config_entries.options.async_configure(result["flow_id"], {"stale_timeout": 60})
     assert result["type"] is FlowResultType.CREATE_ENTRY
     await hass.async_block_till_done()
