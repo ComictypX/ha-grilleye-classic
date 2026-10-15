@@ -1,0 +1,51 @@
+# Covers missing advertisements, integration failure, startup and helper arming.
+alias: GrillEye - Empfang oder Fühler ausgefallen
+description: Prüft während der Grillüberwachung alle 60 Sekunden sowie bei Statuswechseln.
+triggers:
+  - trigger: time_pattern
+    minutes: "/1"
+  - trigger: state
+    entity_id:
+      - binary_sensor.grilleye_classic_4001_receiving
+      - sensor.grilleye_classic_4001_probe_1
+      - sensor.grilleye_classic_4001_probe_2
+    to:
+      - "off"
+      - "unavailable"
+      - "unknown"
+  - trigger: state
+    entity_id: input_boolean.grilleye_alarm_aktiv
+    to: "on"
+conditions:
+  - condition: state
+    entity_id: input_boolean.grilleye_alarm_aktiv
+    state: "on"
+  - condition: or
+    conditions:
+      - condition: not
+        conditions:
+          - condition: state
+            entity_id: binary_sensor.grilleye_classic_4001_receiving
+            state: "on"
+      - condition: state
+        entity_id: sensor.grilleye_classic_4001_probe_1
+        state:
+          - "unavailable"
+          - "unknown"
+      - condition: state
+        entity_id: sensor.grilleye_classic_4001_probe_2
+        state:
+          - "unavailable"
+          - "unknown"
+actions:
+  - action: notify.mobile_app_dein_iphone
+    data:
+      title: GrillEye - Überwachung gestört
+      message: Keine verlässlichen Temperaturdaten für beide Fühler. Grill und Empfang vor Ort prüfen.
+      data:
+        push:
+          sound:
+            name: default
+            critical: 1
+            volume: 1.0
+mode: single

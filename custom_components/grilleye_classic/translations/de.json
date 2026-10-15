@@ -1,0 +1,62 @@
+{
+  "title": "GrillEye Classic",
+  "config": {
+    "flow_title": "GrillEye Classic ({address})",
+    "step": {
+      "user": {
+        "title": "GrillEye Classic",
+        "description": "Die MAC des GrillEye eingeben, nicht die des Shelly-Proxys. Ein ausgeschaltetes Gerät kann hinzugefügt werden; Messwerte bleiben bis zum ersten gültigen Live-Werbepaket nicht verfügbar.",
+        "data": {
+          "address": "Bluetooth-MAC-Adresse"
+        }
+      },
+      "confirm": {
+        "title": "GrillEye Classic einrichten",
+        "description": "GrillEye Classic mit Adresse {address} hinzufügen? Es werden ausschließlich Werbepakete passiv empfangen."
+      }
+    },
+    "error": {
+      "invalid_address": "Eine MAC wie 40:06:A0:8B:40:01 eingeben.",
+      "not_supported": "Die empfangenen Daten entsprechen nicht dem unterstützten Classic-Format."
+    },
+    "abort": {
+      "already_configured": "Dieses GrillEye ist bereits eingerichtet.",
+      "not_supported": "Das Werbepaket gehört zu keinem unterstützten GrillEye Classic."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Empfangs-Timeout",
+        "description": "Sekunden ohne gültiges Werbepaket, bis Temperaturen nicht verfügbar sind (30–3600, Standard 120). Speichern lädt die Integration neu; sie wartet auf ein Live-Paket.",
+        "data": {
+          "stale_timeout": "Timeout (Sekunden)"
+        }
+      }
+    },
+    "error": {
+      "invalid_timeout": "Eine ganze Zahl zwischen 30 und 3600 eingeben."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "probe_1": {
+        "name": "Fühler 1"
+      },
+      "probe_2": {
+        "name": "Fühler 2"
+      },
+      "rssi": {
+        "name": "Signalstärke"
+      },
+      "last_seen": {
+        "name": "Letztes gültiges Werbepaket"
+      }
+    },
+    "binary_sensor": {
+      "receiving": {
+        "name": "Empfang"
+      }
+    }
+  }
+}

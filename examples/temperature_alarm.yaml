@@ -1,0 +1,38 @@
+# One complete automation for the UI YAML editor. Replace entity/action IDs.
+alias: GrillEye - Temperaturalarm
+description: Wiederholt während aktivierter Grillüberwachung jede Minute einen kritischen Hinweis.
+triggers:
+  - trigger: time_pattern
+    minutes: "/1"
+  - trigger: state
+    entity_id: input_boolean.grilleye_alarm_aktiv
+    to: "on"
+conditions:
+  - condition: state
+    entity_id: input_boolean.grilleye_alarm_aktiv
+    state: "on"
+  - condition: or
+    conditions:
+      - condition: numeric_state
+        entity_id: sensor.grilleye_classic_4001_probe_1
+        above: input_number.grilleye_zieltemperatur
+      - condition: numeric_state
+        entity_id: sensor.grilleye_classic_4001_probe_2
+        above: input_number.grilleye_maximaltemperatur
+actions:
+  - action: notify.mobile_app_dein_iphone
+    data:
+      title: GrillEye - Temperatur prüfen
+      message: >-
+        Ein Grenzwert wurde überschritten. Grill sofort vor Ort prüfen.
+        Fühler 1: {{ states('sensor.grilleye_classic_4001_probe_1') }}
+        {{ state_attr('sensor.grilleye_classic_4001_probe_1', 'unit_of_measurement') }};
+        Fühler 2: {{ states('sensor.grilleye_classic_4001_probe_2') }}
+        {{ state_attr('sensor.grilleye_classic_4001_probe_2', 'unit_of_measurement') }}.
+      data:
+        push:
+          sound:
+            name: default
+            critical: 1
+            volume: 1.0
+mode: single

@@ -1,0 +1,62 @@
+{
+  "title": "GrillEye Classic",
+  "config": {
+    "flow_title": "GrillEye Classic ({address})",
+    "step": {
+      "user": {
+        "title": "GrillEye Classic",
+        "description": "Enter the GrillEye MAC, not the Shelly proxy MAC. An offline device can be added; readings stay unavailable until a valid live advertisement arrives.",
+        "data": {
+          "address": "Bluetooth MAC address"
+        }
+      },
+      "confirm": {
+        "title": "Set up GrillEye Classic",
+        "description": "Add GrillEye Classic at {address}? Only passive advertisements are received."
+      }
+    },
+    "error": {
+      "invalid_address": "Use a MAC such as 40:06:A0:8B:40:01.",
+      "not_supported": "The received data does not match the supported Classic format."
+    },
+    "abort": {
+      "already_configured": "This GrillEye is already configured.",
+      "not_supported": "This advertisement is not a supported GrillEye Classic."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Reception timeout",
+        "description": "Seconds without a valid advertisement before temperatures become unavailable (30–3600, default 120). Saving reloads the integration and waits for a live packet.",
+        "data": {
+          "stale_timeout": "Stale timeout (seconds)"
+        }
+      }
+    },
+    "error": {
+      "invalid_timeout": "Enter an integer from 30 to 3600."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "probe_1": {
+        "name": "Probe 1"
+      },
+      "probe_2": {
+        "name": "Probe 2"
+      },
+      "rssi": {
+        "name": "Signal strength"
+      },
+      "last_seen": {
+        "name": "Last valid advertisement"
+      }
+    },
+    "binary_sensor": {
+      "receiving": {
+        "name": "Receiving"
+      }
+    }
+  }
+}

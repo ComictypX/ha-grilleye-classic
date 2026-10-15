@@ -1,0 +1,16 @@
+{
+  "domain": "grilleye_classic",
+  "name": "GrillEye Classic",
+  "bluetooth": [
+    {"service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb", "manufacturer_id": 0, "connectable": false}
+  ],
+  "codeowners": ["@ComictypX"],
+  "config_flow": true,
+  "dependencies": ["bluetooth", "bluetooth_adapters"],
+  "documentation": "https://github.com/ComictypX/ha-grilleye-classic",
+  "integration_type": "device",
+  "iot_class": "local_push",
+  "issue_tracker": "https://github.com/ComictypX/ha-grilleye-classic/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}
