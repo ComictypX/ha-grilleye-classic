@@ -1,4 +1,15 @@
-# Prüfstand 0.2.0 – 16.10.2026
+# Prüfstand 0.2.1 – 16.10.2026
+
+## Automatische Fühleraktivierung
+
+25 lokale Parser-/Empfangstests bestehen unverändert. Zusätzliche echte HA-Tests prüfen
+die Erkennung über frische positive Messwerte, den verzögerten HA-Reload mit
+anschließender Anzeige unter unveränderten Entity-IDs, ignorierte Null-/Fehlerwerte,
+manuelle/Device-/Config-Entry-Deaktivierungen, die Systemoption für neue Entitäten,
+Abziehen, Neuladen und Entfernen des Listeners beim Entladen.
+Der vollständige Prüflauf mit Release 0.2.1 wird nach Abschluss hier ergänzt.
+
+## Historischer Prüfstand 0.2.0
 
 ## Veröffentlichung
 

@@ -1,5 +1,13 @@
 # Änderungen
 
+## 0.2.1
+
+- Fühler 3–6 werden beim ersten gültigen positiven Live-Messwert automatisch aktiviert.
+- HA übernimmt dies durch verzögertes Neuladen; bis zum nächsten Live-Paket können Werte kurz unverfügbar sein.
+- Manuelle Deaktivierungen und die HA-Einstellung „Neue Entitäten deaktivieren“ bleiben erhalten.
+- Nullwerte und ungültige/veraltete Pakete aktivieren keinen zusätzlichen Kanal.
+- Einmal erkannte Fühler bleiben für Verlauf und Ausfallalarme aktiviert, auch nach Abziehen/Neustart.
+
 ## 0.2.0
 
 - Versionierte GitHub-Releases für HACS; automatische Veröffentlichung erst nach grünen Prüfungen.

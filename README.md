@@ -45,7 +45,7 @@ Der Scanner bleibt zentral von HA/Shelly verwaltet; es wird kein eigener Scanner
 
 | Entität | Bedeutung |
 |---|---|
-| Fühler 1–6 (3–6 zunächst deaktiviert) | Temperatur, °C, 0,1 °C Auflösung; HA kann die Anzeigeeinheit umrechnen |
+| Fühler 1–6 (3–6 bei Messwert automatisch aktiviert) | Temperatur, °C, 0,1 °C Auflösung; HA kann die Anzeigeeinheit umrechnen |
 | Signalstärke | RSSI des zuletzt angenommenen Pakets, dBm; Diagnose, kein kalibrierter Abstand |
 | Letztes gültiges Werbepaket | UTC-Zeitstempel; bleibt nach Empfangsausfall sichtbar |
 | Empfang | `on` bei frischem gültigem Paket, sonst `off`; Bluetooth-Verbindungsklasse |
@@ -163,9 +163,26 @@ Temperaturfelder. Layout relativ zu diesem Wert:
 | `00004006a08b400168012e040000000000000000` | 36,0 °C | 107,0 °C | jeweils 0 |
 | `00004006a08b4001400138040000000000000000` | 32,0 °C | 108,0 °C | jeweils 0 |
 
-Fühler 3–6 unter Einstellungen → Geräte & Dienste → GrillEye Classic → Gerät →
-deaktivierte Entitäten einblenden → gewünschte Entität aktivieren. Bestehende
-Unique IDs und benutzerdefinierte Namen von Fühler 1/2 bleiben erhalten.
+Ab **0.2.1** aktiviert die Integration Fühler 3–6 automatisch, sobald ein frisches,
+gültiges Paket für diesen Kanal einen Wert **über 0,0 bis einschließlich 300,0 °C**
+enthält. Nullwerte aktivieren nichts, auch bei freigegebener 0-°C-Anzeige: ein
+Nullfeld kann einen unbenutzten Anschluss darstellen. Zur erstmaligen Erkennung
+eines Fühlers bei genau 0 °C entweder über 0 °C messen oder ihn manuell aktivieren.
+
+Home Assistant übernimmt die Registrierung mit seinem normalen verzögerten Neuladen
+(typischerweise etwa 30 s); danach wartet die Integration auf ein frisches Paket.
+Dabei können Sensoren kurz nicht verfügbar sein und aktive Ausfallalarme auslösen.
+Es werden weder alte Messwerte als frisch ausgegeben noch Alarme unterdrückt.
+Weitere Pakete aktivieren denselben Kanal nicht wiederholt. Ein erkannter Kanal
+bleibt aktiviert, auch wenn er abgezogen wird oder das Gerät aus ist; seine Messung
+wird dann je nach Rohwert/Timeout unverfügbar, damit Ausfallalarme weiter greifen.
+
+Manuell deaktivierte, vom Gerät/System deaktivierte Entitäten sowie die
+HA-Systemoption „Neue Entitäten deaktivieren“ werden respektiert. Es werden nur
+die von dieser Integration zunächst deaktivierten optionalen Kanäle aktiviert.
+Manuelle Aktivierung bleibt möglich unter Einstellungen → Geräte & Dienste →
+GrillEye Classic → Gerät → deaktivierte Entitäten einblenden. Bestehende
+Unique IDs, Entity-IDs, benutzerdefinierte Namen und Verläufe bleiben erhalten.
 Zusätzliche Kanäle sind durch den App-Decoder belegt, an deinem Gerät jedoch noch
 nicht mit bestückten Fühlern praktisch geprüft.
 
@@ -194,7 +211,7 @@ Temperaturverlauf. Tatsächliche Entity-IDs zuerst einsetzen (deutsche Namen kö
 Der Verlauf benötigt aufgezeichnete Zustände im Recorder. Das Beispiel installiert
 keine weiteren HACS-Karten und verändert dein vorhandenes Dashboard nicht automatisch.
 
-## Update von 0.1.0
+## Update von 0.1.0 / 0.2.0
 
 Nach dem HACS-Update Home Assistant neu starten. Integration nicht löschen oder neu
 anlegen: die bisherigen MAC-/Kanal-IDs werden weiterverwendet. Timeout und Nullfilter

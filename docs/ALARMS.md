@@ -2,7 +2,8 @@
 
 Die Integration liefert Temperaturen; die **Alarmvorlage (Blueprint)** ergänzt
 ein HA-Formular pro benötigtem Fühler. Sie funktioniert für jeden der sechs Kanäle.
-Fühler 3–6 zuerst am Gerät in HA aktivieren. Die Vorlage steuert keinen Summer im
+Fühler 3–6 werden ab 0.2.1 bei einem gültigen positiven Messwert automatisch aktiviert;
+manuell deaktivierte Kanäle bei Bedarf selbst wieder aktivieren. Die Vorlage steuert keinen Summer im
 GrillEye: Hardwarealarme benötigen weiterhin einen anderen GATT-Verbindungsweg.
 
 **Ein Alarm ersetzt niemals Aufsicht am Gasgrill.** Echte Funk- und Push-Zuverlässigkeit

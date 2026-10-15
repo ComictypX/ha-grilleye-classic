@@ -6,6 +6,7 @@ from homeassistant.core import HomeAssistant
 
 from .const import CONF_STALE_TIMEOUT, CONF_ZERO_IS_VALID, DEFAULT_STALE_TIMEOUT
 from .coordinator import GrillEyeCoordinator
+from .discovery import async_watch_optional_probes
 
 type GrillEyeConfigEntry = ConfigEntry[GrillEyeCoordinator]
 PLATFORMS = [Platform.SENSOR, Platform.BINARY_SENSOR]
@@ -23,6 +24,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: GrillEyeConfigEntry) -> 
     entry.async_on_unload(entry.add_update_listener(_async_options_updated))
     coordinator.async_start()
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    async_watch_optional_probes(hass, entry, coordinator)
     return True
 
 
