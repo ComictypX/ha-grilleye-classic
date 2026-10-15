@@ -89,6 +89,13 @@ neuen Entitäten. Beim Empfangsstatus stehen Quelle (`source`) und Timeout als A
 
 ## Alarm-Automationen und iOS Critical Notifications
 
+**Empfohlen:** Die neue [Alarmvorlage mit Einrichtungsformular](docs/ALARMS.md)
+unterstützt jeden der sechs Fühler mit individuellen Unter-/Obergrenzen,
+Benachrichtigungsaktionen und zeitlich begrenzter Quittierung. Empfangs-/Fühlerfehler
+werden auch während der Temperatur-Alarmruhe gemeldet. Blueprint separat importieren;
+HACS erzeugt keine Automationen. Die folgenden zwei Dateien bleiben einfache
+Alternativen für Fühler 1/2; nicht parallel für denselben Zweck aktivieren.
+
 Die Dateien unter [examples](examples) sind **Vorlagen für jeweils eine neue Automation
 im UI-YAML-Editor**, keine automatische Änderung deiner laufenden HA-Konfiguration.
 

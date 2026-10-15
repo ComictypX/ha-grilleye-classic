@@ -1,5 +1,13 @@
 # Prüfstand 0.2.0 – 15.10.2026
 
+## Alarm-Erweiterung
+
+Die neue Alarmvorlage wird zusätzlich mit echten HA-Automationen, Schalter-Helfern
+und Timern geprüft. Ziel sind inklusive Grenzen, Wiederholung, Alarmruhe,
+Ausfallmeldungen trotz Alarmruhe, Start/Reload, Einheiten und unabhängige Fühler.
+Der konkrete Prüflauf dieser Erweiterung wird nach Abschluss ergänzt.
+Die folgenden CI-Ergebnisse beziehen sich zunächst auf den vorherigen Parserstand.
+
 ## Lokal ausgeführt
 
 - Python 3.14.7: **25 Offline-Tests bestanden**.

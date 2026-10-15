@@ -1,0 +1,246 @@
+blueprint:
+  name: GrillEye – Fühleralarm mit Alarmruhe
+  description: >-
+    Pro benötigtem Fühler eine Automation anlegen. Überwacht Unter-/Obergrenze,
+    Empfang und ungültige Messwerte. Grenzen gelten einschließlich und in der
+    Anzeigeeinheit des Sensors. Alarmruhe unterdrückt ausschließlich
+    Temperaturmeldungen, niemals Empfangs-, Fühler- oder Konfigurationsfehler.
+    Ein Alarm ersetzt keine Aufsicht am Gasgrill. Push-Zustellung praktisch testen.
+  domain: automation
+  author: ComictypX
+  source_url: https://github.com/ComictypX/ha-grilleye-classic/blob/main/blueprints/automation/grilleye_probe_alarm.yaml
+  homeassistant:
+    min_version: "2026.10.0"
+  input:
+    entities:
+      name: Fühler und Bedienung
+      input:
+        probe:
+          name: Temperaturfühler
+          description: Einen aktivierten GrillEye-Fühler auswählen.
+          selector:
+            entity:
+              filter:
+                domain: sensor
+                integration: grilleye_classic
+                device_class: temperature
+        receiving:
+          name: Empfang des zugehörigen GrillEye
+          selector:
+            entity:
+              filter:
+                domain: binary_sensor
+                integration: grilleye_classic
+                device_class: connectivity
+        armed:
+          name: Grillüberwachung aktiv
+          description: Einen Schalter-Helfer wählen; für mehrere Fühler gemeinsam nutzbar.
+          selector:
+            entity:
+              filter:
+                domain: input_boolean
+        snooze:
+          name: Alarmruhe-Timer dieses Fühlers
+          description: >-
+            Einen eigenen Timer-Helfer je Fühler wählen, z. B. fünf Minuten,
+            mit Wiederherstellung aktiv. Timer starten = Temperaturmeldungen
+            vorübergehend quittieren. Nicht zwischen Fühlern teilen.
+          selector:
+            entity:
+              filter:
+                domain: timer
+    limits:
+      name: Individuelle Grenzen
+      input:
+        expected_unit:
+          name: Anzeigeeinheit des gewählten Sensors
+          default: "°C"
+          selector:
+            select:
+              options: ["°C", "°F"]
+        upper_enabled:
+          name: Obergrenze überwachen
+          default: true
+          selector:
+            boolean:
+        upper:
+          name: Obergrenze (Alarm ab diesem Wert)
+          description: Selbst passend festlegen; kein vorgegebener sicherer Garwert.
+          selector:
+            number:
+              min: 0
+              max: 600
+              step: 0.1
+              mode: box
+        lower_enabled:
+          name: Untergrenze überwachen
+          default: false
+          selector:
+            boolean:
+        lower:
+          name: Untergrenze (Alarm bis einschließlich diesem Wert)
+          default: 0
+          selector:
+            number:
+              min: 0
+              max: 600
+              step: 0.1
+              mode: box
+    notifications:
+      name: Benachrichtigungen
+      input:
+        repeat_minutes:
+          name: Wiederholung bei anhaltendem Alarm (Minuten)
+          default: 1
+          selector:
+            number:
+              min: 1
+              max: 60
+              step: 1
+              mode: box
+        notify_actions:
+          name: Alarmaktion / Benachrichtigungsziel
+          description: >-
+            Standard ist ein Hinweis in Home Assistant. Für das iPhone eine
+            Companion-App-Benachrichtigung auswählen. Verfügbare Variablen:
+            alarm_title, alarm_message, alarm_reason, alarm_probe,
+            alarm_temperature, alarm_unit. Critical-Push-Beispiel siehe Anleitung.
+          default:
+            - action: persistent_notification.create
+              data:
+                title: "{{ alarm_title }}"
+                message: "{{ alarm_message }}"
+                notification_id: "{{ 'grilleye_' ~ alarm_probe | replace('.', '_') }}"
+          selector:
+            action:
+
+# Inputs are bound before limited trigger templates and are also available in actions.
+trigger_variables:
+  alarm_probe: !input probe
+  alarm_receiving: !input receiving
+  alarm_armed: !input armed
+  alarm_snooze: !input snooze
+  alarm_expected_unit: !input expected_unit
+  alarm_upper_enabled: !input upper_enabled
+  alarm_lower_enabled: !input lower_enabled
+  alarm_upper: !input upper
+  alarm_lower: !input lower
+  alarm_repeat_minutes: !input repeat_minutes
+
+variables:
+  alarm_temperature: "{{ states(alarm_probe) }}"
+  alarm_unit: "{{ state_attr(alarm_probe, 'unit_of_measurement') }}"
+  alarm_reason: >-
+    {% if alarm_lower_enabled and alarm_upper_enabled and alarm_lower >= alarm_upper %}
+      configuration
+    {% elif not is_state(alarm_receiving, 'on') %}
+      reception
+    {% elif not is_number(alarm_temperature) %}
+      probe
+    {% elif alarm_unit != alarm_expected_unit %}
+      configuration
+    {% elif alarm_upper_enabled and alarm_temperature | float >= alarm_upper %}
+      upper
+    {% elif alarm_lower_enabled and alarm_temperature | float <= alarm_lower %}
+      lower
+    {% else %}
+      none
+    {% endif %}
+  alarm_title: "GrillEye – {{ state_attr(alarm_probe, 'friendly_name') or alarm_probe }}"
+  alarm_message: >-
+    {% if alarm_reason == 'reception' %}
+      Kein frischer GrillEye-Empfang. Grill und Funkstrecke vor Ort prüfen.
+    {% elif alarm_reason == 'probe' %}
+      Fühler liefert keinen gültigen Messwert. Fühler und Grill vor Ort prüfen.
+    {% elif alarm_reason == 'configuration' %}
+      Alarmkonfiguration prüfen: Untergrenze muss kleiner als Obergrenze sein;
+      Sensor-Einheit muss {{ alarm_expected_unit }} sein.
+    {% elif alarm_reason == 'upper' %}
+      Obergrenze erreicht: {{ alarm_temperature }} {{ alarm_unit }}
+      (Grenze {{ alarm_upper }} {{ alarm_expected_unit }}). Grill vor Ort prüfen.
+    {% elif alarm_reason == 'lower' %}
+      Untergrenze erreicht: {{ alarm_temperature }} {{ alarm_unit }}
+      (Grenze {{ alarm_lower }} {{ alarm_expected_unit }}). Grill vor Ort prüfen.
+    {% else %}
+      Messwert innerhalb der konfigurierten Grenzen.
+    {% endif %}
+
+triggers:
+  # Inclusive comparisons need templates: numeric_state above/below are exclusive.
+  - trigger: template
+    value_template: >-
+      {{ alarm_upper_enabled and is_number(states(alarm_probe))
+         and states(alarm_probe) | float >= alarm_upper }}
+    id: limit
+  - trigger: template
+    value_template: >-
+      {{ alarm_lower_enabled and is_number(states(alarm_probe))
+         and states(alarm_probe) | float <= alarm_lower }}
+    id: limit
+  - trigger: template
+    value_template: >-
+      {{ is_number(states(alarm_probe))
+         and (not alarm_upper_enabled or states(alarm_probe) | float < alarm_upper)
+         and (not alarm_lower_enabled or states(alarm_probe) | float > alarm_lower) }}
+    id: clear
+  - trigger: state
+    entity_id: !input probe
+    to: ["unknown", "unavailable"]
+    id: probe
+  - trigger: state
+    entity_id: !input probe
+    from: ["unknown", "unavailable"]
+    id: recovery
+  - trigger: state
+    entity_id: !input probe
+    attribute: unit_of_measurement
+    id: unit
+  - trigger: state
+    entity_id: !input receiving
+    from: null
+    id: reception
+  - trigger: state
+    entity_id: !input armed
+    from: null
+    id: arming
+  - trigger: state
+    entity_id: !input snooze
+    from: null
+    id: acknowledge
+  - trigger: time_pattern
+    minutes: "/1"
+    id: watchdog
+  - trigger: homeassistant
+    event: start
+    id: startup
+  - trigger: event
+    event_type: automation_reloaded
+    id: startup
+
+conditions:
+  - condition: template
+    value_template: >-
+      {% set active = is_state(alarm_armed, 'on') %}
+      {% set quiet = is_state(alarm_snooze, 'active') %}
+      {% set elapsed = as_timestamp(now()) - as_timestamp(this.attributes.last_triggered, 0) %}
+      {% set immediate = trigger.id not in ['watchdog', 'clear'] %}
+      {{ (not active and trigger.id == 'arming' and quiet)
+         or (alarm_reason == 'none' and quiet)
+         or (active and alarm_reason != 'none'
+             and not (quiet and alarm_reason in ['upper', 'lower'])
+             and (elapsed >= alarm_repeat_minutes * 60 or immediate)) }}
+
+actions:
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ not is_state(alarm_armed, 'on') or alarm_reason == 'none' }}"
+        sequence:
+          - action: timer.cancel
+            target:
+              entity_id: !input snooze
+    default: !input notify_actions
+
+# No delay loops: each trigger evaluates fresh states, watchdog retries sustained faults.
+mode: single
+max_exceeded: silent
