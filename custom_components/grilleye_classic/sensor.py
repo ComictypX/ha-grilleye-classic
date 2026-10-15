@@ -61,20 +61,8 @@ class GrillEyeSensor(GrillEyeEntity, SensorEntity):
 
     @property
     def extra_state_attributes(self):
-        """Keep signed raw readings visible even when a channel is unavailable."""
+        """Expose raw values; the receiving entity also retains invalid diagnostics."""
         key = self.entity_description.key
         if not key.startswith("probe_"):
             return None
-        reading = self.coordinator.data.reading
-        if reading is None:
-            return {"raw_value": None, "value_status": "no_packet"}
-        value = reading.raw_values[int(key[6:]) - 1]
-        if not self.coordinator.data.fresh:
-            status = "stale"
-        elif value == 0 and not self.coordinator.zero_is_valid:
-            status = "zero_filtered"
-        elif not 0 <= value <= 3000:
-            status = "out_of_range"
-        else:
-            status = "valid"
-        return {"raw_value": value, "value_status": status}
+        return self.coordinator.probe_diagnostics[key]

@@ -143,28 +143,31 @@ async def test_signed_invalid_values_diagnostics_and_stale(hass, bluetooth_mock)
     registry = er.async_get(hass)
     probe1 = registry.async_get_entity_id("sensor", DOMAIN, f"{ADDRESS}_probe_1")
     probe2 = registry.async_get_entity_id("sensor", DOMAIN, f"{ADDRESS}_probe_2")
-    assert hass.states.get(probe1).attributes["value_status"] == "no_packet"
+    receiving = registry.async_get_entity_id("binary_sensor", DOMAIN, f"{ADDRESS}_receiving")
+    assert hass.states.get(receiving).attributes["probes"]["probe_1"]["value_status"] == "no_packet"
     receive = bluetooth_mock[1].call_args.args[1]
     receive(packet(manufacturer_data={0: PAYLOAD[:8] + struct.pack("<6h", -1, 3001, 0, 0, 0, 0)}))
     await hass.async_block_till_done()
-    for entity_id, raw in ((probe1, -1), (probe2, 3001)):
+    for index, (entity_id, raw) in enumerate(((probe1, -1), (probe2, 3001)), 1):
         state = hass.states.get(entity_id)
         assert state.state == "unavailable"
-        assert state.attributes["value_status"] == "out_of_range"
-        assert state.attributes["raw_value"] == raw
+        diagnostic = hass.states.get(receiving).attributes["probes"][f"probe_{index}"]
+        assert diagnostic["value_status"] == "out_of_range"
+        assert diagnostic["raw_value"] == raw
     async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=121))
     await hass.async_block_till_done()
-    assert hass.states.get(probe1).attributes["value_status"] == "stale"
+    assert hass.states.get(receiving).attributes["probes"]["probe_1"]["value_status"] == "stale"
 
 
 async def test_zero_option_reload_and_recovery(hass, bluetooth_mock):
     entry = await setup_device(hass)
     registry = er.async_get(hass)
     probe1 = registry.async_get_entity_id("sensor", DOMAIN, f"{ADDRESS}_probe_1")
+    receiving = registry.async_get_entity_id("binary_sensor", DOMAIN, f"{ADDRESS}_receiving")
     zero_packet = PAYLOAD[:8] + b"\0\0" + PAYLOAD[10:]
     bluetooth_mock[1].call_args.args[1](packet(manufacturer_data={0: zero_packet}))
     await hass.async_block_till_done()
-    assert hass.states.get(probe1).attributes["value_status"] == "zero_filtered"
+    assert hass.states.get(receiving).attributes["probes"]["probe_1"]["value_status"] == "zero_filtered"
     result = await hass.config_entries.options.async_init(entry.entry_id)
     result = await hass.config_entries.options.async_configure(result["flow_id"], {"stale_timeout": 60, "zero_is_valid": True})
     assert result["type"] is FlowResultType.CREATE_ENTRY

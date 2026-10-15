@@ -71,10 +71,13 @@ neuen Entitäten. Beim Empfangsstatus stehen Quelle (`source`) und Timeout als A
   zulassen“ aktiviert werden. Diese Option gilt für alle Kanäle: ein unbestückter
   Kanal mit Nullbytes kann dann ebenfalls 0 °C anzeigen. Vorher Abzieh-/Kaltfühlertest
   durchführen; die passive Werbung verrät die Geräteversion nicht.
-- An den Temperatursensoren helfen Attribute bei der Diagnose: `raw_value` ist der
+- Am Empfangsstatus enthält das Attribut `probes` die Diagnose aller sechs Kanäle,
+  auch bei nicht verfügbaren Fühlern: `raw_value` ist der
   vorzeichenbehaftete Rohwert in Zehntelgrad. `value_status` ist `no_packet`,
   `zero_filtered`, `out_of_range`, `valid` oder `stale`. Nach Timeout kann `raw_value`
   noch den alten Rohwert enthalten; er ist dann keine aktuelle Messung.
+  Verfügbare Temperatursensoren zeigen diese Attribute ebenfalls; bei nicht
+  verfügbaren Sensoren blendet HA zusätzliche Sensorattribute aus.
 - „BLE-Verbindungsabbruch“ bedeutet hier **Ausbleiben gültiger Werbung**. Es gibt keine
   aktive BLE-Verbindung, deren Trennung direkt gemeldet werden könnte. Ein HA-Ausfall
   selbst kann durch eine Automation im selben HA nicht gemeldet werden.
@@ -226,5 +229,7 @@ Letzter lokaler Prüfstand und verbleibende Grenzen: [TEST_REPORT.md](TEST_REPOR
 - [Shelly Bluetooth Support](https://www.home-assistant.io/integrations/shelly/#bluetooth-support)
 - [HACS Integrationsanforderungen](https://www.hacs.xyz/docs/publish/integration/)
 - [iOS Critical Notifications](https://companion.home-assistant.io/docs/notifications/critical-notifications/)
+- [Tile-Karte](https://www.home-assistant.io/dashboards/tile/)
+- [Verlaufskarte](https://www.home-assistant.io/dashboards/history-graph/)
 
 MIT-Lizenz. Unabhängiges Community-Projekt, keine offizielle GrillEye-Integration.

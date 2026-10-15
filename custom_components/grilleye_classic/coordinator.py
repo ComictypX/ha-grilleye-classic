@@ -43,6 +43,26 @@ class GrillEyeCoordinator(DataUpdateCoordinator[GrillEyeData]):
         self._cancel_deadline: Callable[[], None] | None = None
         self._unsubscribers: list[Callable[[], None]] = []
 
+    @property
+    def probe_diagnostics(self) -> dict[str, dict[str, int | str | None]]:
+        """Explain each channel even when HA suppresses unavailable sensor attrs."""
+        result = {}
+        reading = self.data.reading
+        for index in range(6):
+            value = reading.raw_values[index] if reading else None
+            if value is None:
+                status = "no_packet"
+            elif not self.data.fresh:
+                status = "stale"
+            elif value == 0 and not self.zero_is_valid:
+                status = "zero_filtered"
+            elif not 0 <= value <= 3000:
+                status = "out_of_range"
+            else:
+                status = "valid"
+            result[f"probe_{index + 1}"] = {"raw_value": value, "value_status": status}
+        return result
+
     @callback
     def async_start(self) -> None:
         """Opt into passive non-connectable data and subscribe to every packet.

@@ -2,7 +2,7 @@
 
 ## Lokal ausgeführt
 
-- Python 3.14.7: **24 Offline-Tests bestanden**.
+- Python 3.14.7: **25 Offline-Tests bestanden**.
 - Bekannte Funkpakete unverändert 36,0/107,0 °C und 32,0/108,0 °C.
 - Alle 65.536 signed-16-Werte systematisch durch den echten Parser geprüft:
   Messbereich 0–300 °C, Zehntelgrad, unabhängiger zweiter Kanal.
@@ -17,6 +17,8 @@
 
 Die Linux-CI führt die echten Home-Assistant-Tests aus, einschließlich optionaler
 Kanäle, stabiler Unique IDs, Rohwert-/Statusattribute, Nullwertoption und Reload.
+Die Diagnose liegt zusätzlich am dauerhaft verfügbaren Empfangssensor, da HA
+zusätzliche Attribute nicht verfügbarer Temperatursensoren unterdrückt.
 Zusätzlich werden beide Alarmvorlagen im echten HA-Validator geprüft.
 Ruff, pip check, HACS und hassfest laufen ebenfalls in GitHub Actions.
 Der konkrete Lauf für diese Version wird nach Abschluss hier verlinkt.
