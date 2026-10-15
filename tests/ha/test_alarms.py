@@ -8,12 +8,15 @@ from datetime import timedelta
 from pathlib import Path
 
 import pytest
+import yaml
 
 from homeassistant.components.automation.config import (
     AUTOMATION_BLUEPRINT_SCHEMA, ValidationStatus, async_validate_config_item,
 )
 from homeassistant.components.blueprint.models import Blueprint, BlueprintInputs
-from homeassistant.core import callback
+from homeassistant.core import State, callback
+from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers.restore_state import StoredState, async_get
 from homeassistant.setup import async_setup_component
 from homeassistant.util import dt as dt_util, yaml as yaml_util
 from pytest_homeassistant_custom_component.common import async_fire_time_changed
@@ -23,6 +26,17 @@ PROBE = "sensor.grilleye_probe_1"
 RECEPTION = "binary_sensor.grilleye_receiving"
 ARMED = "input_boolean.grill_active"
 QUIET = "timer.probe_1_quiet"
+
+
+@pytest.fixture(autouse=True)
+async def stop_alarm_helpers(hass, freezer):
+    """Disable public HA consumers before the test clock and HA are torn down."""
+    yield
+    if hass.services.has_service("automation", "turn_off"):
+        await hass.services.async_call("automation", "turn_off", {"entity_id": "all"}, blocking=True)
+    if hass.services.has_service("timer", "cancel"):
+        await hass.services.async_call("timer", "cancel", {"entity_id": "all"}, blocking=True)
+    await hass.async_block_till_done()
 
 
 def blueprint_config(**overrides):
@@ -57,7 +71,10 @@ def set_probe(hass, value, *, probe=PROBE, unit="°C"):
     })
 
 
-async def setup_alarm(hass, freezer, *, value=60, reception="on", armed=False, configs=None):
+async def setup_alarm(
+    hass, freezer, *, value=60, reception="on", armed=False, configs=None,
+    restored_quiet_seconds=None,
+):
     freezer.move_to("2026-10-15T12:00:00+00:00")
     calls = []
 
@@ -66,12 +83,26 @@ async def setup_alarm(hass, freezer, *, value=60, reception="on", armed=False, c
         calls.append(dict(call.data))
 
     hass.services.async_register("alarm_test", "record", record)
+    if restored_quiet_seconds is not None:
+        now = dt_util.utcnow()
+        stored = [
+            StoredState(State(ARMED, "on"), None, now),
+            StoredState(State(QUIET, "active", {
+                "duration": "0:05:00",
+                "finishes_at": (now + timedelta(seconds=restored_quiet_seconds)).isoformat(),
+                "last_transition": "started",
+            }), None, now),
+        ]
+        data = async_get(hass)
+        await data.store.async_save([state.as_dict() for state in stored])
+        await data.async_load()
     assert await async_setup_component(hass, "persistent_notification", {})
     set_probe(hass, value)
     hass.states.async_set(RECEPTION, reception)
-    assert await async_setup_component(hass, "input_boolean", {
-        "input_boolean": {"grill_active": {"name": "Grill active", "initial": armed}},
-    })
+    helper = {"name": "Grill active"}
+    if armed is not None:
+        helper["initial"] = armed
+    assert await async_setup_component(hass, "input_boolean", {"input_boolean": {"grill_active": helper}})
     assert await async_setup_component(hass, "timer", {"timer": {
         "probe_1_quiet": {"duration": "00:05:00", "restore": True},
         "probe_2_quiet": {"duration": "00:05:00", "restore": True},
@@ -307,3 +338,52 @@ async def test_default_action_creates_real_persistent_notification(hass, freezer
     await advance(hass, freezer, 60)
     assert list(notifications) == [expected_id]
     unsubscribe()
+
+
+@pytest.mark.parametrize("remaining", [-30, 120])
+async def test_restored_armed_switch_and_quiet_timer(hass, freezer, remaining):
+    calls = await setup_alarm(
+        hass, freezer, value=90, armed=None, restored_quiet_seconds=remaining,
+    )
+    assert hass.states.get(ARMED).state == "on"
+    if remaining > 0:
+        assert hass.states.get(QUIET).state == "active"
+        assert calls == []
+        await advance(hass, freezer, remaining)
+    else:
+        assert hass.states.get(QUIET).state == "idle"
+        await advance(hass, freezer, 60)
+    assert calls
+    assert calls[-1]["reason"] == "upper"
+
+
+async def test_notification_destination_failure_is_retried(hass, freezer):
+    failures = []
+
+    @callback
+    def fail(call):
+        failures.append(call)
+        raise HomeAssistantError("simulated notification destination unavailable")
+
+    hass.services.async_register("alarm_test", "fail", fail)
+    await setup_alarm(hass, freezer, value=90, configs=[blueprint_config(
+        notify_actions=[{"action": "alarm_test.fail"}],
+    )])
+    await arm(hass)
+    assert len(failures) == 1
+    await advance(hass, freezer, 60)
+    assert len(failures) == 2
+
+
+async def test_documented_critical_notification_payload(hass, freezer):
+    calls = []
+    hass.services.async_register("notify", "mobile_app_test", callback(lambda call: calls.append(call)))
+    document = (ROOT / "docs/ALARMS.md").read_text(encoding="utf-8")
+    actions = yaml.safe_load(document.split("```yaml\n", 1)[1].split("```", 1)[0])
+    actions[0]["action"] = "notify.mobile_app_test"
+    await setup_alarm(hass, freezer, value=90, configs=[blueprint_config(notify_actions=actions)])
+    await arm(hass)
+    assert calls
+    assert calls[-1].data["data"]["push"]["sound"] == {"name": "default", "critical": 1, "volume": 1.0}
+    assert "Obergrenze" in calls[-1].data["message"]
+    assert "{{" not in calls[-1].data["title"]
