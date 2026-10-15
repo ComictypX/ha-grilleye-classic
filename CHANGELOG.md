@@ -2,6 +2,7 @@
 
 ## 0.2.0
 
+- Versionierte GitHub-Releases für HACS; automatische Veröffentlichung erst nach grünen Prüfungen.
 - Importierbare Alarmvorlage für jeden Fühler mit individuellen inklusiven Unter-/Obergrenzen,
   Benachrichtigungsziel, Wiederholung und begrenzter Alarmruhe. Ausfallfehler bleiben aktiv.
 - Bedienkarte, Einrichtungsanleitung und echte HA-Verhaltenstests der Alarme ergänzt.

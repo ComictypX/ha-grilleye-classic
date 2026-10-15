@@ -1,5 +1,13 @@
 # Prüfstand 0.2.0 – 15.10.2026
 
+## Veröffentlichung
+
+Die Release-Logik hat lokal **11 zusätzliche Tests bestanden**: exakter Commit,
+Versions-/Changelog-Prüfung, erlaubter Branch/Ereignistyp, manuelle Wiederholung,
+älterer Main-Stand, vorhandenes Release, Entwurf/Vorabversion, vorhandener Tag und API-Fehler.
+Die CI führt diese Tests ebenfalls vor dem Veröffentlichungsjob aus.
+Der erste vollständige Lauf mit Veröffentlichung wird nach Abschluss ergänzt.
+
 ## Alarm-Erweiterung
 
 **32 zusätzliche Alarmtests bestanden**, mit echten HA-Automationen, Blueprint-

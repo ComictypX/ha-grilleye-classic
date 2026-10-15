@@ -18,13 +18,9 @@ Automation im selben HA nicht zuverlässig gemeldet werden.
    mit Dauer **00:05:00** und aktivierter Wiederherstellung nach Neustart.
    Den Timer nicht zwischen Fühlern teilen.
 3. Einstellungen → Automationen & Szenen → Blueprints → Blueprint importieren.
-   Nach Zusammenführung ins Hauptprojekt diese URL einfügen:
+   Diese URL einfügen:
 
    `https://github.com/ComictypX/ha-grilleye-classic/blob/main/blueprints/automation/grilleye_probe_alarm.yaml`
-
-   Für den noch offenen Pull Request stattdessen:
-
-   `https://github.com/ComictypX/ha-grilleye-classic/blob/rea-protocol-improvements/blueprints/automation/grilleye_probe_alarm.yaml`
 
 4. Aus „GrillEye – Fühleralarm mit Alarmruhe“ eine Automation erstellen. Fühler,
    Empfang **desselben GrillEye**, Überwachungsschalter und den zugehörigen

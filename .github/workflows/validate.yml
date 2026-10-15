@@ -16,6 +16,7 @@ jobs:
       - run: ruff check .
       - run: python -m unittest discover -s tests/unit -v
       - run: pytest -q
+      - run: node --test tests/release/release.test.cjs
   hacs:
     runs-on: ubuntu-latest
     steps:
@@ -28,3 +29,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: home-assistant/actions/hassfest@master
+  release:
+    needs: [tests, hacs, hassfest]
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: publish-release
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/github-script@v9
+        with:
+          script: |
+            await require('./.github/scripts/release.cjs')({github, context, core});

@@ -18,7 +18,8 @@ Werbepaket. Ältere Core-Versionen werden nicht unterstützt.
 
 1. In HACS → Menü → Benutzerdefinierte Repositories die Adresse
    `https://github.com/ComictypX/ha-grilleye-classic` eintragen, Typ **Integration**.
-2. **GrillEye Classic** herunterladen; Home Assistant neu starten.
+2. Die aktuelle veröffentlichte **Release-Version** von GrillEye Classic herunterladen;
+   Home Assistant neu starten. HACS bietet den Entwicklungsbranch nicht zur Installation an.
 3. Einstellungen → Geräte & Dienste → Integration hinzufügen → **GrillEye Classic**.
    Bei automatischer Entdeckung die Einrichtung bestätigen.
 4. Manuell die **GrillEye-MAC `40:06:A0:8B:40:01`** angeben. Die Proxy-MAC
@@ -204,6 +205,11 @@ die zusätzlichen Entitäten bei Bedarf deaktivieren. Keine automatische HA-Aktu
 oder Änderung deiner Alarm-Automationen durch dieses Projektupdate.
 
 ## Entwicklung und Tests
+
+Veröffentlichungen erfolgen als GitHub-Releases (`v0.2.0` usw.). HACS erkennt die
+Release-Version; eine Änderung an `main` allein aktualisiert eine Release-Installation
+nicht. Neue Manifest-Versionen werden erst nach erfolgreichen Softwareprüfungen
+automatisch veröffentlicht. Ablauf: [docs/RELEASING.md](docs/RELEASING.md).
 
 Offline ohne zusätzliche Pakete:
 
