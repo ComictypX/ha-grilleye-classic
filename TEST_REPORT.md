@@ -15,15 +15,18 @@
 
 ## Framework und Repository-Prüfung
 
-Die Linux-CI führt die echten Home-Assistant-Tests aus, einschließlich optionaler
-Kanäle, stabiler Unique IDs, Rohwert-/Statusattribute, Nullwertoption und Reload.
+**Alle drei Jobs bestanden:** [Prüflauf 38810633510](https://github.com/ComictypX/ha-grilleye-classic/actions/runs/38810633510).
+Geprüfter Code-Commit: `662a6549cb99df4688706fd27f3aeb3264589e71`.
+
+- Ubuntu, Python 3.14.8, Home Assistant 2026.10.1.
+- **25 Offline-Tests und 10 echte HA-Frameworktests bestanden**.
+- Optional aktivierte Kanäle, stabile Unique IDs, Rohwert-/Statusattribute,
+  Nullwertoption, Reload, Timeout, Wiederempfang, Entdeckung und Entladen geprüft.
+- Beide Alarmvorlagen mit dem echten HA-Konfigurationsvalidator geprüft.
+- Ruff, pip check, HACS und hassfest: erfolgreich.
+
 Die Diagnose liegt zusätzlich am dauerhaft verfügbaren Empfangssensor, da HA
 zusätzliche Attribute nicht verfügbarer Temperatursensoren unterdrückt.
-Zusätzlich werden beide Alarmvorlagen im echten HA-Validator geprüft.
-Ruff, pip check, HACS und hassfest laufen ebenfalls in GitHub Actions.
-Der konkrete Lauf für diese Version wird nach Abschluss hier verlinkt.
-Historischer Stand 0.1.0: [erfolgreicher Prüflauf](https://github.com/ComictypX/ha-grilleye-classic/actions/runs/38804105992).
-Dieser ältere Lauf ist kein Nachweis für 0.2.0.
 
 ## Grenzen
 
