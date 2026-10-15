@@ -1,6 +1,6 @@
 """Bluetooth discovery, manual setup and timeout options."""
 
-import voluptuous as vol
+import probatio as vol
 
 from homeassistant.components import bluetooth
 from homeassistant.config_entries import ConfigFlow, OptionsFlow
